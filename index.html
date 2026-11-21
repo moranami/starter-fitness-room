@@ -80,7 +80,7 @@ input[type=number],input.mono{font-family:var(--mono)}
 .btn.danger{border-color:var(--danger);color:var(--danger)}
 .btn.sm{min-height:36px;padding:0 10px;font-size:13px}
 .link{background:none;border:0;padding:0;color:var(--pin-ink);text-decoration:underline;font-weight:600}
-.sessgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sessgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
 .sess{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;border-radius:8px;border:1px solid var(--line);background:var(--surface);position:relative}
 .sess b{font:700 22px/1 var(--display);letter-spacing:.04em}
 .sess span{font-size:11px;color:var(--muted)}
@@ -133,7 +133,7 @@ details.warm p{margin-top:6px}
 .empty h2{font:700 24px/1.1 var(--display);text-transform:uppercase;letter-spacing:.04em}
 
 /* plan tab */
-.row{display:grid;grid-template-columns:44px 36px 1fr;gap:10px;align-items:center;text-align:left;width:100%;background:none;border:0;border-top:1px solid var(--line);padding:10px 0;min-height:48px}
+.row{display:grid;grid-template-columns:56px 28px 1fr;gap:10px;align-items:center;text-align:left;width:100%;background:none;border:0;border-top:1px solid var(--line);padding:10px 0;min-height:48px}
 .row:first-of-type{border-top:0}
 .row .d{font:600 16px var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .row .s{font:700 22px/1 var(--display)}
@@ -201,7 +201,13 @@ var dow=function(iso){return new Date(utc(iso)).getUTCDay()};
 var fmtDate=function(iso){return new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(new Date(utc(iso)))};
 var uid8=function(){return 'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)};
 var num=function(v){if(v===''||v==null)return null;var n=parseFloat(String(v).replace(',','.'));return isFinite(n)?n:null};
-var DAY_SESS={0:'A',1:'A',2:'B',3:'B',4:'C',5:'C',6:'C'};
+function pickSess(date){
+  var w=getW(date,'A',false)||getW(date,'B',false);if(w&&w.entries.length)return w.sess;
+  var prev=Object.keys(state.workouts).map(function(i){return state.workouts[i]})
+    .filter(function(x){return x.date<date&&PLAN[x.sess]&&x.entries&&x.entries.length})
+    .sort(function(a,b){return a.date<b.date?1:-1})[0];
+  return prev&&prev.sess==='A'?'B':'A';
+}
 var EFFORTS=['Easy','Moderate','Hard'];
 
 /* ---------- the plan (from "Your Gym Plan — Beginner Strength") ---------- */
@@ -211,7 +217,7 @@ function WALK(k,cue){return {k:k,kind:'cardio',name:'Easy incline walk',min:15,m
     A('Upright or recumbent cycle','Easy pace.','plan'),
     A('Elliptical','Easy pace, use the handles.','plan')]}}
 var PLAN={
- A:{name:'Push & Legs',day:'Mon',short:'Mon',ex:[
+ A:{name:'Full Body A',day:'Day 1',short:'Day 1',ex:[
   {k:'A1',name:'Leg Press',sets:3,reps:'10–15',rest:90,cue:'Feet shoulder-width on the plate. Lower for 2 seconds and don’t lock your knees at the top.',alts:[
     A('Leg Extension Machine','Light. Use it if the leg press is taken.','tip'),
     A('Hack Squat Machine','Only after someone has shown you how. Start very light.','tip')]},
@@ -223,43 +229,32 @@ var PLAN={
     A('Prone (lying) leg curl','Works the same muscles.','tip')]},
   {k:'A5',name:'Lateral Raise Machine',sets:2,reps:'12–15',rest:60,cue:'Light weight. Lead with your elbows and don’t shrug.',alts:[
     A('Shoulder Press Machine','Light, press without shrugging.','tip')]},
-  {k:'A6',name:'Ab Crunch Machine',sets:2,reps:'12–15',rest:45,cue:'Light weight. Breathe out as you curl, and come back up slowly.',alts:[
+  {k:'A6',name:'Biceps Curl Machine',sets:2,reps:'10–15',rest:60,cue:'Keep your upper arms flat on the pad. Curl up, then lower for 2 seconds.',alts:[
+    A('Seated Row Machine (narrow grip)','Light, if the curl machine is taken.','tip')]},
+  {k:'A7',name:'Ab Crunch Machine',sets:2,reps:'12–15',rest:45,cue:'Light weight. Breathe out as you curl, and come back up slowly.',alts:[
     A('Rotary Torso Machine','Light. Log reps per side.','plan')]},
-  WALK('A7','Easy enough that you could talk in full sentences.')
+  WALK('A8','Easy enough that you could talk in full sentences. Skip it if you’re short on time.')
  ]},
- B:{name:'Pull & Core',day:'Wed',short:'Wed',ex:[
-  {k:'B1',name:'Leg Extension Machine',sets:3,reps:'12–15',rest:60,cue:'Start light. Pause 1 second at the top and lower slowly.',alts:[
-    A('Leg Press (light)','Use it if the extension machine is taken.','plan')]},
+ B:{name:'Full Body B',day:'Day 2',short:'Day 2',ex:[
+  {k:'B1',name:'Leg Press',sets:3,reps:'10–15',rest:90,cue:'Same setup and weight as Day 1.',alts:[
+    A('Leg Extension Machine','Light. Use it if the leg press is taken.','tip')]},
   {k:'B2',name:'Lat Pulldown',sets:3,reps:'10–15',rest:90,cue:'Pull the bar to your upper chest with elbows down. Don’t lean way back.',alts:[
     A('Seated Row Machine','Pull back instead of down.','plan')]},
   {k:'B3',name:'Pec Fly machine',sets:3,reps:'10–15',rest:90,cue:'Keep a slight bend in your elbows. Squeeze slowly at the front and control the way back.',alts:[
     A('Chest Press Machine','Safe fallback.','plan')]},
-  {k:'B4',name:'Back Extension Machine',sets:2,reps:'12–15',rest:60,cue:'Light weight. Move from your hips and don’t arch your back too far.',alts:[
-    A('Glute Machine','Light, if the back extension is taken.','tip')]},
-  {k:'B5',name:'Rear Delt Machine',sets:2,reps:'12–15',rest:60,cue:'It’s the pec fly machine set up in reverse. Go light and squeeze your shoulder blades.',alts:[
-    A('Seated Row Machine (light)','Pull wide and squeeze your shoulder blades.','tip')]},
-  {k:'B6',name:'Rotary Torso Machine',sets:2,reps:'10/side',rest:45,cue:'Light weight. Turn slowly through a comfortable range, with no bouncing. Log reps per side.',alts:[
-    A('Ab Crunch Machine','Light, breathe out as you curl.','plan')]},
-  WALK('B7','Easy enough that you could talk in full sentences.')
- ]},
- C:{name:'Full Body & Arms',day:'Fri',short:'Fri',ex:[
-  {k:'C1',name:'Leg Press',sets:3,reps:'10–15',rest:90,cue:'Same setup as Monday.',alts:[
-    A('Leg Extension Machine','Light. Use it if the leg press is taken.','tip')]},
-  {k:'C2',name:'Chest Press Machine',sets:3,reps:'10–15',rest:90,cue:'Same setup as Monday.',alts:[
-    A('Pec Fly machine','Lighter weight.','plan')]},
-  {k:'C3',name:'Lat Pulldown',sets:3,reps:'10–15',rest:90,cue:'Pull to your upper chest with elbows down.',alts:[
-    A('Seated Row Machine','Pull back instead of down.','plan')]},
-  {k:'C4',name:'Glute Machine',sets:2,reps:'12–15/leg',rest:60,cue:'Push through your whole foot and squeeze at the end. Log reps per leg.',alts:[
+  {k:'B4',name:'Glute Machine',sets:2,reps:'12–15/leg',rest:60,cue:'Push through your whole foot and squeeze at the end. Log reps per leg.',alts:[
     A('Back Extension Machine','Light, squeeze your glutes at the top.','tip')]},
-  {k:'C5',name:'Biceps Curl Machine',sets:2,reps:'10–15',rest:60,cue:'Keep your upper arms flat on the pad. Curl up, then lower for 2 seconds.',alts:[
-    A('Seated Row Machine (narrow grip)','Light, if the curl machine is taken.','tip')]},
-  {k:'C6',name:'Triceps Press Machine',sets:2,reps:'10–15',rest:60,cue:'Keep your elbows in. Press until your arms are straight, then take 2 seconds on the way back.',alts:[
+  {k:'B5',name:'Back Extension Machine',sets:2,reps:'12–15',rest:60,cue:'Light weight. Move from your hips and don’t arch your back too far.',alts:[
+    A('Glute Machine','Light, if the back extension is taken.','tip')]},
+  {k:'B6',name:'Triceps Press Machine',sets:2,reps:'10–15',rest:60,cue:'Keep your elbows in. Press until your arms are straight, then take 2 seconds on the way back.',alts:[
     A('Chest Press Machine (narrow grip)','Light, elbows close to your body.','tip')]},
-  WALK('C7','Easy. Skip it if you’re short on time.')
+  {k:'B7',name:'Rotary Torso Machine',sets:2,reps:'10/side',rest:45,cue:'Light weight. Turn slowly through a comfortable range, with no bouncing. Log reps per side.',alts:[
+    A('Ab Crunch Machine','Light, breathe out as you curl.','plan')]},
+  WALK('B8','Easy enough that you could talk in full sentences. Skip it if you’re short on time.')
  ]}
 };
-var ORDER=['A','B','C'];
-var SESS_LABEL={A:'Mon',B:'Wed',C:'Fri'};
+var ORDER=['A','B'];
+var OLD_NAMES={A:'Push & Legs',B:'Pull & Core',C:'Full Body & Arms'};
 
 function phase(wk){
   if(wk<=2)return {t:'Learn',cap:2,txt:'2 sets of everything, light. You should be able to do 3–4 more reps when you stop. Get every seat and pad setting right.'};
@@ -272,7 +267,6 @@ function phase(wk){
 var LS='starter-room-v1';
 var state={workouts:{},settings:{start:null}};
 var ui={tab:'log',date:todayISO(),sess:null};
-ui.sess=DAY_SESS[dow(ui.date)];
 var drafts={};
 var pending=false;
 var sheetState=null;
@@ -344,11 +338,11 @@ function getW(date,sess,create){
   return w;
 }
 function findEx(sess,k){return PLAN[sess].ex.filter(function(e){return e.k===k})[0]}
-function historyFor(k){
+function historyFor(ex){
   return Object.keys(state.workouts).map(function(i){return state.workouts[i]})
     .filter(function(w){return w.date<ui.date})
     .sort(function(a,b){return a.date<b.date?1:-1})
-    .map(function(w){return {w:w,es:(w.entries||[]).filter(function(e){return e.k===k&&e.kind!=='cardio'}).sort(function(a,b){return a.set-b.set})}})
+    .map(function(w){return {w:w,es:(w.entries||[]).filter(function(e){return e.kind!=='cardio'&&e.ex===ex.name}).sort(function(a,b){return a.set-b.set})}})
     .filter(function(x){return x.es.length});
 }
 function fmtE(e){
@@ -358,7 +352,7 @@ function fmtE(e){
 function topReps(r){var m=String(r).match(/\d+/g);return m?parseInt(m[m.length-1],10):0}
 function readyToAdd(ex,wk){
   if(ex.unit&&ex.unit!=='reps')return false;
-  var h=historyFor(ex.k).slice(0,2);
+  var h=historyFor(ex).slice(0,2);
   if(h.length<2)return false;
   var need=topReps(ex.reps),sets=Math.min(ex.sets,phase(wk).cap);
   return h.every(function(x){return x.es.length>=sets&&x.es.every(function(e){return e.reps>=need})});
@@ -387,7 +381,7 @@ function viewLog(){
 }
 
 function lastBlock(ex,name){
-  var h=historyFor(ex.k);
+  var h=historyFor(ex);
   if(!h.length)return {html:'<p class="last">No earlier log for this slot yet.</p>',es:[]};
   var x=h[0];
   return {html:'<p class="last">Last time, '+esc(fmtDate(x.w.date))+': <span class="mono">'+x.es.map(fmtE).map(esc).join(' · ')+'</span></p>',es:x.es};
@@ -466,7 +460,7 @@ function viewHist(){
   var total=ws.reduce(function(n,w){return n+w.entries.length},0);
   var out='<section class="card"><div class="lab">Logbook</div><p><b class="mono">'+ws.length+'</b> sessions · <b class="mono">'+total+'</b> entries</p><button class="btn" data-act="export">Export as CSV</button></section>';
   ws.forEach(function(w,i){
-    var S=PLAN[w.sess]||{name:w.sess};
+    var S=w.date<'2026-11-21'&&OLD_NAMES[w.sess]?{name:OLD_NAMES[w.sess]}:(PLAN[w.sess]||{name:OLD_NAMES[w.sess]||w.sess});
     var body='',last='';
     w.entries.forEach(function(e){
       if(e.ex!==last){body+='<div class="hex">'+esc(e.ex)+'</div>';last=e.ex}
@@ -481,13 +475,13 @@ function viewHist(){
 }
 
 function viewPlan(){
-  var rows=[['Mon','A','Push & Legs, then 10–15 min easy walk'],['Tue','','Rest'],['Wed','B','Pull & Core, then 10–15 min easy walk'],['Thu','','Rest'],['Fri','C','Full Body & Arms, then 10–15 min easy walk'],['Sat','','Rest, or sports and play'],['Sun','','Rest, or sports and play']];
+  var rows=[['Day 1','A','Full Body A, then 10–15 min easy walk'],['Day 2','B','Full Body B, then 10–15 min easy walk']];
   var wk=weekOf(ui.date),ph=phase(wk);
   return ''+
    '<section class="card"><div class="lab">Week '+wk+' · '+esc(ph.t)+'</div><p>'+esc(ph.txt)+'</p></section>'+
    '<section class="card"><div class="lab">Weekly layout</div><div>'+rows.map(function(r){
       return r[1]?'<button class="row" data-act="openSess" data-s="'+r[1]+'"><span class="d">'+r[0]+'</span><span class="s">'+r[1]+'</span><span>'+esc(r[2])+'</span></button>':'<div class="row"><span class="d">'+r[0]+'</span><span class="s">—</span><span class="cue">'+r[2]+'</span></div>';
-   }).join('')+'</div><p class="small">Any 3 days work if there’s a rest day between them. Never lift two days in a row. Tap a day to open it on the Log tab.</p></section>'+
+   }).join('')+'</div><p class="small">Two workouts a week, alternating A and B. Leave 2–3 days between them, for example Mon + Thu or Tue + Sat. The Log tab picks the next one for you. Tap a workout to open it.</p></section>'+
    '<section class="card"><div class="lab">Moving up</div><ul class="plain"><li>Start light. Stop each set when you could still do 3–4 more reps.</li><li>Every set at the top of the range, with good form, in two sessions in a row: go up the smallest step and start back at the bottom of the range.</li><li>Go up in reps first and weight second.</li><li>Never test a max or try a set you might fail.</li></ul></section>'+
    '<section class="card"><div class="lab">Form and safety</div><ul class="plain"><li>Take 2 seconds on the way down and 1 second on the way up. Don’t slam the stack.</li><li>Breathe out as you push or pull. Never hold your breath.</li><li>Line up the joint you’re moving with the machine’s pivot dot. Ask staff if you’re not sure.</li><li>Muscle burn is fine. Sharp pain, or pain in a joint, means stop and tell Dad.</li><li>Don’t copy what other people at the gym are lifting.</li><li>No pre-workout, energy drinks or supplements.</li></ul></section>'+
    '<section class="card"><div class="lab">Outside the gym</div><ul class="plain"><li>60 minutes of activity a day. Sports, biking and walking all count.</li><li>Sleep 8–10 hours.</li><li>Three real meals with protein in each, plus a snack before and after lifting. Drink water.</li></ul></section>'+
@@ -614,7 +608,7 @@ function csvCell(v){v=String(v==null?'':v);return /[",\n\r]/.test(v)?'"'+v.repla
 function buildCSV(){
   var rows=[['date','time','session','exercise','set','reps','unit','weight_kg','minutes','effort','hard_intervals','comment','session_note']];
   Object.keys(state.workouts).map(function(i){return state.workouts[i]}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:(a.sess<b.sess?-1:1)}).forEach(function(w){
-    var S=PLAN[w.sess]?PLAN[w.sess].name:w.sess;
+    var S=w.date<'2026-11-21'&&OLD_NAMES[w.sess]?OLD_NAMES[w.sess]:(PLAN[w.sess]?PLAN[w.sess].name:(OLD_NAMES[w.sess]||w.sess));
     (w.entries||[]).forEach(function(e){
       var c=e.kind==='cardio';
       rows.push([w.date,e.t||'',S,e.ex,c?'':e.set,c?'':e.reps,c?'':e.unit,c?'':(e.kg==null?'':e.kg),c?e.min:'',c?e.eff:'',c&&e.iv!=null?e.iv:'',e.note||'',w.note||'']);
@@ -654,7 +648,7 @@ document.addEventListener('click',function(ev){
   if(t.dataset.sess){ui.sess=t.dataset.sess;render(true);return}
   var a=t.dataset.act;
   if(a==='closeSheet')closeSheet();
-  else if(a==='today'){ui.date=todayISO();ui.sess=DAY_SESS[dow(ui.date)];render(true)}
+  else if(a==='today'){ui.date=todayISO();ui.sess=pickSess(ui.date);render(true)}
   else if(a==='log')logSet(t.dataset.k);
   else if(a==='logCardio')logCardio(t.dataset.k);
   else if(a==='alts')openAlts(t.dataset.k);
@@ -684,7 +678,7 @@ document.addEventListener('input',function(ev){
 });
 document.addEventListener('change',function(ev){
   var id=ev.target.id;
-  if(id==='datepick'&&ev.target.value){ui.date=ev.target.value;ui.sess=DAY_SESS[dow(ui.date)];render(true)}
+  if(id==='datepick'&&ev.target.value){ui.date=ev.target.value;ui.sess=pickSess(ui.date);render(true)}
   else if(id==='snote'){var w=getW(ui.date,ui.sess,true);w.note=ev.target.value.trim();persist(w.id)}
   else if(id==='startdate'&&ev.target.value){state.settings.start=ev.target.value;saveSettings();updateChrome()}
   else if(id==='restorefile'&&ev.target.files&&ev.target.files[0]){var fr=new FileReader();fr.onload=function(){restoreText(String(fr.result))};fr.readAsText(ev.target.files[0]);ev.target.value=''}
@@ -695,6 +689,7 @@ document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!$('#shee
 /* ---------- boot ---------- */
 loadLocal();
 if(!state.settings.start){state.settings.start=todayISO();saveLocal()}
+ui.sess=pickSess(ui.date);
 render(true);
 if('serviceWorker' in navigator&&location.protocol!=='file:'){navigator.serviceWorker.register('sw.js').catch(function(){})}
 if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().catch(function(){})}
